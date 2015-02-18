@@ -1,0 +1,66 @@
+<!doctype html>
+<html ng-app="perf">
+  <head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.3.13/angular.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/3.2.0/lodash.min.js"></script>
+  </head>
+  <body ng-controller="MainCtrl">
+    <h1>Performance Runner</h1>
+    <hr>
+    <div>
+      <input type="number" ng-model="counter" />
+      <input type="text" ng-model="site" style="width:300px"/>
+      <button ng-click="start()">START</button>
+    </div>
+    <hr>
+    <div>Average Duration: {{averageDuration || 'N/A'}}</div>
+    <pre>{{metrics | json}}</pre>
+    <script>
+      angular.module('perf', [])
+      .controller('MainCtrl', function($scope, $http, $timeout) {
+        $scope.metrics = [];
+        $scope.counter = 10;
+        $scope.site = 'http://www.gamefly.com';
+        $scope.start = function() {
+          $scope.metrics = [];
+          for(var i=0; i<$scope.counter; i++) {
+            $timeout(function() {
+              console.log('requesting...', performance.now());
+              var before = performance.now();
+              $http.get('http://localhost:3000/' + $scope.site)
+              .success(function(data, status) {
+                $scope.metrics.push({
+                  before: before,
+                  after: performance.now(),
+                  duration: performance.now() - before,
+                  status: status,
+                  length: data.length
+                });
+              })
+              .error(function(data, status) {
+                $scope.metrics.push({
+                  before: before,
+                  after: performance.now(),
+                  duration: performance.now() - before,
+                  status: status,
+                  length: data.length
+                });
+              });
+            }, i*5000);
+          }
+        };
+        $scope.$watch('metrics', function(){
+          if ($scope.metrics.length) {
+            var durations = $scope.metrics.map(function(a) {
+              return a.duration;
+            });
+            var sum = _.reduce(durations, function(a, b) {
+              return a + b;
+            }, 0);
+            $scope.averageDuration = sum / $scope.metrics.length;
+          }
+        }, true);
+      });
+    </script>
+  </body>
+</html>
