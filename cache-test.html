@@ -1,0 +1,93 @@
+<!doctype html>
+<html ng-app="cache">
+  <head>
+    <title>Cache Test</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.2/css/bootstrap.min.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.3.13/angular.min.js"></script>
+  </head>
+  <body ng-controller="MainCtrl">
+    <div class="container-fluid">
+      <h1>Cache Test</h1>
+      <hr>
+      <form class="form-horizontal">
+        <div class="form-group">
+          <label class="col-sm-2 control-label">Site</label>
+          <div class="col-sm-4">
+            <input type="text" class="form-control" ng-model="site">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="col-sm-2 control-label">Number of Requests</label>
+          <div class="col-sm-2">
+            <input type="number" class="form-control" ng-model="counter">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="col-sm-2 control-label">Frequency Requests</label>
+          <div class="col-sm-2">
+            <input type="number" class="form-control" ng-model="timeout">
+          </div>
+        </div>
+        <div class="form-group">
+          <div class="col-sm-offset-2 col-sm-4">
+            <button class="btn btn-primary" ng-click="start()">Start</button>
+          </div>
+        </div>
+      </form>
+      <hr>
+      <table class="table table-condensed table-bordered">
+        <caption>Network Results</caption>
+        <tr>
+          <th>#</th>
+          <th>Status</th>
+          <th>Size</th>
+          <th>Time</th>
+          <th>Content-Type</th>
+          <th>Cache-Control</th>
+          <th>Pragma</th>
+          <th>Expires</th>
+        </tr>
+        <tr ng-repeat="metric in metrics">
+          <td>{{$index + 1}}</td>
+          <td>{{metric.status}}</td>
+          <td>{{metric.size}} B</td>
+          <td>{{metric.time}} ms</td>
+          <td>{{metric.contentType}}</td>
+          <td>{{metric.cacheControl}}</td>
+          <td>{{metric.pragma}}</td>
+          <td>{{metric.expires}}</td>
+        </tr>
+      </table>
+    </div>
+    <script>
+      angular.module('cache', [])
+      .controller('MainCtrl', function($scope, $http, $timeout) {
+        $scope.metrics = [];
+        $scope.counter = 10;
+        $scope.timeout = 500;
+        $scope.site = 'http://www.gamefly.com';
+        $scope.start = function() {
+          $scope.metrics = [];
+          for(var i=0; i<$scope.counter; i++) {
+            $timeout(function() {
+              var before = performance.now();
+              console.log('requesting...', before);
+              $http.get($scope.site).success(function(data, status, headers) {
+                $scope.metrics.push({
+                  status: status,
+                  size: data.length,
+                  time: performance.now() - before,
+                  contentType: headers('content-type'),
+                  cacheControl: headers('cache-control'),
+                  pragma: headers('pragma'),
+                  expires: headers('expires')
+                });
+              });
+            }, $scope.timeout * i);
+          }
+        };
+      });
+    </script>
+  </body>
+</html>
